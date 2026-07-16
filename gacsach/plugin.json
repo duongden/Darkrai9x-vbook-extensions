@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "name": "Gác Sách",
+    "author": "vBook",
+    "version": 9,
+    "source": "https://gacsach.org",
+    "regexp": "(www.)?gacsach.(com|club|online|org)(/(doc-)?sach-truc-tuyen/\\d+/.*?.html$|/[^/]+/?$)",
+    "description": "Đọc truyện trên trang Gác Sách",
+    "locale": "vi_VN",
+    "language": "javascript",
+    "type": "novel"
+  },
+  "script": {
+    "home": "home.js",
+    "genre": "genre.js",
+    "detail": "detail.js",
+    "search": "search.js",
+    "toc": "toc.js",
+    "chap": "chap.js"
+  }
+}
