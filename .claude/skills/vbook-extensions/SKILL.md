@@ -1,6 +1,6 @@
 ---
 name: vbook-extensions
-description: Create, fix, or test vBook extensions against the current engine API (extension-api.md + the real ScriptExecutor runtime) — novel/comic/video/tts/translate types, explore sections, richer detail/config schema. Tests, builds, and installs via the `scripts/vbook.js` CLI against the vBook local REST API. Trigger when the user wants a new extension built, an existing one fixed/updated, or an existing one audited/tested for which script is failing, and mentions the vBook server / extension-api.md / newer script fields (explore, tags, format, track).
+description: Create, fix, test, or refactor vBook extensions against the current engine API (extension-api.md + the real ScriptExecutor runtime) — novel/comic/video/tts/translate types, explore sections, richer detail/config schema. Tests, builds, and installs via the `scripts/vbook.js` CLI against the vBook local REST API. Trigger when the user wants a new extension built, an existing one fixed/updated, audited/tested for which script is failing, or refactored to the current template style, and mentions the vBook server / extension-api.md / newer script fields (explore, tags, format, track).
 ---
 
 # vBook extensions (current engine, REST-API-driven)
@@ -87,6 +87,7 @@ Read only the file for the mode you're in.
 - **CREATE** — new extension from a story/video/comic-site URL. Read `modes/create.md`.
 - **FIX** — update an existing extension (domain change, broken selector, old→new contract migration). Read `modes/fix.md`.
 - **TEST** — check an existing extension, read-only, no edits. Test all (every script, full report) or test one (single named script). Read `modes/test.md`.
+- **REFACTOR** — align an existing, working extension to the current template style (config.js/BASE_URL/normalizeUrl, encrypt, field contract, comment stripping) **without changing behavior**. Read `modes/refactor.md`.
 
 If unclear, ask. Bare URL with no verb → assume CREATE.
 
@@ -103,7 +104,17 @@ node .claude/skills/vbook-extensions/scripts/vbook.js build   <ext-dir> [out.zip
 
 `<ext-dir>` is repo-relative (e.g. `hhtqvietsub`). Args after the script name map to `vararg` (detail/toc/chap → `[url]`, search → `[query, page]`, track → `[episodeUrl]`, tts → `[text, voiceId]`, translate → `[text, from, to, source]`). Icon auto-included from `<ext-dir>/icon.png`; pass `--no-icon` for faster installs.
 
-**Server URL:** default `http://192.168.10.77:8080` (the phone/emulator running the vBook app + its dev server). Override with `--server <url>` or env `VBOOK_SERVER`. If `/connect` fails (`ECONNREFUSED`), the local server isn't up — **tell the user to open the vBook app and turn ON debug/dev mode (that starts the server), then give you the IP:port it displays**; re-run with `--server http://<ip>:<port>`. Don't guess other hosts.
+**Server URL:** the CLI picks a server in this order:
+1. `--server <url>` (explicit, single, no probing)
+2. env `VBOOK_SERVER` (explicit, single)
+3. `scripts/servers.json` — `{ "servers": ["http://ip:port", ...] }`, each probed via `/connect`, **first that answers is used** (prints `(skipped N unreachable)` if it fell through). This file is gitignored/per-machine — copy `scripts/servers.example.json` to `scripts/servers.json` and put the real dev-server URL(s) in it.
+
+Failure messages tell the user what to fix:
+- **no server configured** (servers.json missing, no `--server`/env) → copy the example file and fill it in.
+- **none responded** (all servers in the list unreachable) → the CLI lists each URL + error; tell the user to open the vBook app and turn ON debug/dev mode (that starts the server) and confirm the IP:port matches `servers.json`.
+- **explicit server unreachable** → same dev-mode hint, re-run with the right `--server http://<ip>:<port>`.
+
+Don't guess other hosts — only what's in `servers.json`/`--server`/`VBOOK_SERVER`.
 
 **`/connect` runs first, every time.** Before any test/build/install the CLI calls `GET /connect` and prints `[connect] device: <name>` — always eyeball which device you're about to hit (e.g. installing to the wrong phone). Run `connect` alone to just check. `/connect` returns `{"code":200,"data":"<deviceName>"}`.
 

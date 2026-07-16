@@ -7,10 +7,14 @@
 //   node .claude/skills/vbook-extensions/scripts/vbook.js build   <ext-dir> [outfile.zip]
 //   node .claude/skills/vbook-extensions/scripts/vbook.js test    <ext-dir> <script.js> [arg1 arg2 ...]
 //
-// Server URL: --server <url> or env VBOOK_SERVER, default http://127.0.0.1:8080.
-// Every command first calls GET /connect and prints which device is connected —
-// so you always know what you're testing/installing against. Icon is included for
-// install/build if <ext-dir>/icon.png exists; omit with --no-icon.
+// Server selection order:
+//   1. --server <url>            (single explicit server, no probing)
+//   2. env VBOOK_SERVER          (single explicit server, no probing)
+//   3. scripts/servers.json      ({ "servers": ["http://ip:port", ...] }) — each is
+//      probed via GET /connect; the FIRST that answers is used. If none answer, or
+//      the file is missing/empty, it fails loudly telling you what to fix.
+// Every command confirms the chosen server via /connect and prints its device.
+// Icon is included for install/build if <ext-dir>/icon.png exists; omit with --no-icon.
 
 const fs = require("fs");
 const path = require("path");
@@ -18,7 +22,9 @@ const http = require("http");
 const https = require("https");
 const { URL } = require("url");
 
-const DEFAULT_SERVER = "http://192.168.10.77:8080";
+// servers.json lives next to this script (gitignored; copy servers.example.json).
+const SERVERS_FILE = path.join(__dirname, "servers.json");
+const SERVERS_EXAMPLE = path.join(__dirname, "servers.example.json");
 
 function die(msg) { console.error("ERROR: " + msg); process.exit(1); }
 
@@ -59,24 +65,83 @@ function parseJson(text) {
   try { return JSON.parse(text); } catch (e) { return null; }
 }
 
-// GET /connect — prints the connected device name, fails loudly if unreachable.
-// Returns the device name string.
-async function checkConnection(server) {
+// Probe one server's GET /connect. Returns { ok, device, error } — never throws.
+async function probeServer(server) {
   let res;
   try {
     res = await request("GET", new URL("/connect", server).toString());
   } catch (e) {
-    die("cannot reach vBook server at " + server + " (" + e.message + ").\n" +
-        "  → On the phone, open the vBook app and turn ON debug/dev mode (this starts the local server),\n" +
-        "    then read the IP:port it shows and re-run with --server http://<ip>:<port> (or set VBOOK_SERVER).");
+    return { ok: false, error: e.message };
   }
   const j = parseJson(res.text);
   const device = j && j.data != null ? String(j.data) : res.text.trim();
   if (res.status !== 200) {
-    die("/connect returned " + res.status + " " + (device || ""));
+    return { ok: false, error: "/connect returned " + res.status + " " + (device || "") };
   }
-  console.log("[connect] device: " + (device || "(unknown)") + "  @ " + server);
-  return device;
+  return { ok: true, device: device };
+}
+
+// Read the server list from servers.json. Returns [] if missing/invalid.
+function readServerList() {
+  if (!fs.existsSync(SERVERS_FILE)) return null; // null = file not present
+  let cfg;
+  try {
+    cfg = JSON.parse(fs.readFileSync(SERVERS_FILE, "utf8"));
+  } catch (e) {
+    die("servers.json is not valid JSON: " + e.message);
+  }
+  const list = Array.isArray(cfg.servers) ? cfg.servers.filter(function (s) { return typeof s === "string" && s.trim(); }) : [];
+  return list;
+}
+
+// Resolve which server to use:
+//   explicit (--server/env) -> probe it, use if OK
+//   otherwise -> probe each in servers.json, use first that answers
+// Prints the chosen device. Fails loudly with a fix hint otherwise.
+async function resolveServer(explicit) {
+  if (explicit) {
+    const r = await probeServer(explicit);
+    if (!r.ok) {
+      die("cannot reach vBook server at " + explicit + " (" + r.error + ").\n" +
+          "  -> On the phone, open the vBook app and turn ON debug/dev mode (starts the local server),\n" +
+          "     then re-run with --server http://<ip>:<port> (or set VBOOK_SERVER).");
+    }
+    console.log("[connect] device: " + (r.device || "(unknown)") + "  @ " + explicit);
+    return explicit;
+  }
+
+  const list = readServerList();
+  if (list === null) {
+    die("no server configured.\n" +
+        "  -> Copy " + relToRepo(SERVERS_EXAMPLE) + " to " + relToRepo(SERVERS_FILE) + " and put your\n" +
+        "     vBook dev-server URL(s) in it (open the vBook app, turn ON debug/dev mode to see the IP:port).\n" +
+        "     Or pass --server http://<ip>:<port> / set VBOOK_SERVER.");
+  }
+  if (list.length === 0) {
+    die("servers.json has no servers listed. Add at least one \"http://<ip>:<port>\" to its \"servers\" array,\n" +
+        "  or pass --server http://<ip>:<port>.");
+  }
+
+  const failures = [];
+  for (let i = 0; i < list.length; i++) {
+    const server = list[i];
+    const r = await probeServer(server);
+    if (r.ok) {
+      console.log("[connect] device: " + (r.device || "(unknown)") + "  @ " + server +
+                  (failures.length ? "  (skipped " + failures.length + " unreachable)" : ""));
+      return server;
+    }
+    failures.push(server + " -> " + r.error);
+  }
+  die("none of the " + list.length + " server(s) in servers.json responded:\n" +
+      failures.map(function (f) { return "  - " + f; }).join("\n") + "\n" +
+      "  -> Open the vBook app and turn ON debug/dev mode, confirm the IP:port matches servers.json.");
+}
+
+// Display a path relative to the repo root for friendlier messages.
+function relToRepo(p) {
+  const rel = path.relative(repoRoot(), p);
+  return rel && !rel.startsWith("..") ? rel : p;
 }
 
 // Build { plugin, src, icon? } from an extension directory on disk.
@@ -102,26 +167,27 @@ function buildPayload(extDir, wantIcon) {
   return payload;
 }
 
-// Pull --server <url> out of argv; fall back to env then default.
+// Pull an explicit --server <url> out of argv; else env VBOOK_SERVER; else null
+// (null means "probe servers.json"). Splices --server out of args in place.
 function extractServer(args) {
-  let server = process.env.VBOOK_SERVER || DEFAULT_SERVER;
   const i = args.indexOf("--server");
   if (i !== -1) {
-    server = args[i + 1] || die("--server needs a URL");
+    const val = args[i + 1] || die("--server needs a URL");
     args.splice(i, 2);
+    return val;
   }
-  return server;
+  return process.env.VBOOK_SERVER || null;
 }
 
 async function main() {
   const argv = process.argv.slice(2);
   const noIcon = argv.indexOf("--no-icon") !== -1;
   let args = argv.filter(function (a) { return a !== "--no-icon"; });
-  const server = extractServer(args);
+  const explicit = extractServer(args);
   const cmd = args[0];
 
   if (cmd === "connect") {
-    await checkConnection(server);
+    await resolveServer(explicit);
     return;
   }
 
@@ -131,8 +197,8 @@ async function main() {
     process.exit(2);
   }
 
-  // Always confirm the target device first.
-  await checkConnection(server);
+  // Resolve + confirm the target device first; every command runs against this server.
+  const server = await resolveServer(explicit);
 
   if (cmd === "install") {
     const p = buildPayload(extDir, !noIcon);
