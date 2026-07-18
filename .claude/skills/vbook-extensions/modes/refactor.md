@@ -14,7 +14,7 @@ The point is consistency: config.js/`BASE_URL`/`normalizeUrl` conventions, `plug
 
 Compare the ext against `templates/<type>/` and `SKILL.md` constraints. Build a checklist of style gaps — do NOT touch behavior:
 
-- **config.js**: present for novel/comic/video? Sets `let BASE_URL = DOMAIN;` + the `CONFIG_URL` back-compat `try/catch` + `normalizeUrl`? An old-contract `let BASE_URL = 'https://...'` hardcode should become the alias form (keep the same effective URL).
+- **config.js**: present for novel/comic/video? Hardcodes the site URL as `let BASE_URL = "https://...";`, then overrides via `try { if (DOMAIN) BASE_URL = DOMAIN; } catch {}` + `normalizeUrl`? A top-level `let BASE_URL = DOMAIN;` (throws if `DOMAIN` absent) or an old-contract `CONFIG_URL` shim should become this hardcode-then-override form (keep the same effective URL).
 - **`BASE_URL` vs `DOMAIN`**: scripts should `load('config.js')` and use `BASE_URL`, never `DOMAIN` directly (novel/comic/video). `plugin.json.config` key stays `DOMAIN`.
 - **`config.DOMAIN.default` == `metadata.source`** (same URL).
 - **normalizeUrl**: every `url`-receiving script (`detail`/`toc`/`chap`/`page`/`track`) calls `url = normalizeUrl(url)` first — one shared function in config.js, not an inline regex per file.
