@@ -36,13 +36,7 @@ For each script:
 
 1. **Write** selectors from the real fetched HTML — never guess a class/id. Apply every constraint in `SKILL.md`. Save the file before testing (the CLI reads from disk).
 2. **Run** `node .claude/skills/vbook-extensions/scripts/vbook.js test <ext-dir> <script>.js <arg1> <arg2> ...` (args in documented order, all strings). It calls `/connect` first (prints the target device), then logs the input and the `{code,log,data}` output. See the CLI section in `SKILL.md`.
-4. **Verify `data` against `reference/extension-api.md`'s field table** — `code:0` alone is not a pass:
-   - Every documented field present, right type.
-   - No field silently empty/null that shouldn't be.
-   - `link`/`url`/`cover` are real usable URLs — absolute, or a `host` field set; not `undefined`, not a lazy-load stub.
-   - Values match the live page — `name` matches the real title, `cover` points to the real image, list order is correct, `description`/`detail` is real content not nav/ad boilerplate.
-   - Arrays have the expected count — 1 item when the page lists 20 is still a failure.
-   - All hold → script done, move to the next. Any fail → read `log`, fix precisely, re-run step 2.
+4. **Verify `data` against the shared standard in `reference/verify-checklist.md`** — `code:0` alone is not a pass. All checks hold → script done, move to the next. Any fail → read `log`, fix precisely, re-run step 2.
 5. **Escalate after ~3 fix/retest cycles without progress**:
    - For a `url`-receiving script: check for the trailing-`/`-stripped case (constraint 7 in `SKILL.md`).
    - Re-fetch the live page, re-diff selectors.

@@ -39,7 +39,7 @@ Work through the checklist in small, isolated edits. After **each** change that 
 For every script touched:
 
 1. Re-run `vbook.js test <ext-dir> <script>.js <same args as Phase 0>`.
-2. **Compare against the Phase 0 baseline** — same field set, same/equivalent values, same array counts, same `link`/`cover`/`url` hosts. `code:0` alone is not a pass; the data must match what it produced before.
+2. **Compare against the Phase 0 baseline** — same field set, same/equivalent values, same array counts, same `link`/`cover`/`url` hosts. `code:0` alone is not a pass; the data must match what it produced before (the field-rigor bar is the shared standard in `reference/verify-checklist.md`, but here parity with baseline is the pass condition, not just validity).
 3. Any divergence from baseline that isn't an intended contract fix → revert that edit, it changed behavior.
 4. Re-run dependent scripts too (a config.js change touches every script that loads it — re-test the whole chain, not just the edited file).
 

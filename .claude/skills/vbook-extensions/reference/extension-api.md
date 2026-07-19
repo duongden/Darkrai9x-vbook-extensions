@@ -4,6 +4,20 @@ Extensions are JavaScript files that tell vBook how to fetch content from websit
 
 Working starter code (full script sets per type, with error handling already applied) lives in `.claude/skills/vbook-extensions/templates/<type>/` — this document is the field/API contract, not a copy-paste source.
 
+## Table of contents
+
+- [Quick reference](#quick-reference) — `type` values, script signatures, required-scripts-per-type table, `chap`→`track` chain
+- [Extension package layout](#extension-package-layout)
+- [plugin.json](#pluginjson) — [metadata fields](#metadata-fields), [config fields](#config-fields)
+- [Script contracts](#script-contracts) — per-script params, return shape, field tables:
+  - [home.js](#homejs--home-page-tabs) · [explore.js](#explorejs--sectioned-discover-page) · [genre.js](#genrejs--genretag-list) · [search.js](#searchjs--paginated-item-list)
+  - [detail.js](#detailjs--item-detail-page) · [toc.js](#tocjs--chapterepisode-list) · [chap.js](#chapjs--chapter-content) · [page.js](#pagejs--comic-page-list-alternative-to-array-returning-chapjs)
+  - [track.js](#trackjs--videoaudio-playback-step-2-of-the-chaptrack-chain) · [comment scripts](#comment-scripts--referenced-from-detailjss-comments)
+  - [voice.js](#voicejs--tts-voice-list-type-tts) · [tts.js](#ttsjs--synthesize-one-sentence-type-tts) · [language.js](#languagejs--translate-language-list-type-translate) · [translate.js](#translatejs--translate-text-type-translate)
+- [Available JS APIs](#available-js-apis) — [fetch](#fetch-http) · [HTML parsing](#html-parsing) · [Storage](#storage) · [Browser](#browser-headless-webview) · [Graphics](#graphics-image-manipulation) · [WebSocket](#websocket) · [Quick Translator](#translation-quick-translator--offline-chinese--vietnamese) · [Utilities](#utilities) · [Crypto](#crypto)
+- [Extension settings (config injection)](#extension-settings-config-injection)
+- [Loading external scripts](#loading-external-scripts)
+
 ## Quick reference
 
 **Response format** — every script returns via the `Response` helper, never a raw value:

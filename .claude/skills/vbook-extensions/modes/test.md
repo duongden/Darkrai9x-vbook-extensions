@@ -58,9 +58,8 @@ Run and verify every script in the chain (procedure below), regardless of whethe
 ## Run-and-verify procedure (used by both scopes)
 
 1. `node .claude/skills/vbook-extensions/scripts/vbook.js test <ext-dir> <script>.js <args...>` (see the CLI section in `SKILL.md`). It checks `/connect` first, then logs the exact input and the `{code,log,data}` output.
-2. Verify `data` against `reference/extension-api.md`'s field table for that script — same rigor as CREATE/FIX mode: every documented field present with the right type, nothing silently empty/null that shouldn't be, `link`/`url`/`cover` are real usable URLs, values match what a live fetch of the same page would show, arrays have the expected count.
-3. Check for a **silent domain move**: if `link`/`cover`/`href` in the result come back on a different host than `plugin.json.metadata.source`, the site has moved even though the request returned `code:0` — flag this even on an otherwise-passing script.
-4. Classify:
+2. Verify `data` against the shared standard in `reference/verify-checklist.md` — same rigor as CREATE/FIX mode: fields present + right type, no silent empty/null, real usable URLs, values match a live fetch, expected array counts, and the silent-domain-move check.
+3. Classify:
    - **PASS** — `code:0`, all checks above hold.
    - **FAIL: connectivity** — timeout, DNS error, non-2xx the script doesn't guard, or a domain that no longer resolves.
    - **FAIL: silent domain move** — `code:0` and fields present, but URLs resolve through a different host than declared.

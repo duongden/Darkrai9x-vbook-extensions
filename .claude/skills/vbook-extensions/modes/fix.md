@@ -53,7 +53,7 @@ A "silent" domain move is easy to miss: the old host still returns 200 because i
 `code:0` alone is not a pass:
 
 1. Run `vbook.js test` for the script(s) touched in Phase 2.
-2. Verify `data` against `reference/extension-api.md`'s field table: every documented field present with the right type, nothing silently empty/null, `link`/`url`/`cover` are real usable URLs, values match the live page, arrays have the expected count.
+2. Verify `data` against the shared standard in `reference/verify-checklist.md` (fields present + right type, no silent empty/null, real usable URLs, values match the live page, expected array counts, no silent domain move).
 3. Fail → read `log`, fix precisely, re-test. After ~3 cycles without progress, re-fetch the live page before changing anything else.
 4. Once directly-touched scripts pass, re-test dependent scripts in dependency order (e.g. `detail` → `toc` → `chap`), applying the same verification.
 
