@@ -1,0 +1,32 @@
+{
+  "metadata": {
+    "name": "gongzicp",
+    "author": "vBook",
+    "version": 2,
+    "source": "https://www.gongzicp.com",
+    "regexp": "(www.|m.)gongzicp.com/novel-\\d+.html$",
+    "description": "Đọc truyện trên trang gongzicp.com",
+    "locale": "zh-CN",
+    "language": "javascript",
+    "type": "chinese_novel",
+    "encrypt": true
+  },
+  "script": {
+    "home": "home.js",
+    "genre": "genre.js",
+    "detail": "detail.js",
+    "search": "search.js",
+    "toc": "toc.js",
+    "chap": "chap.js"
+  },
+  "config": {
+    "DOMAIN": {
+      "title": "Domain",
+      "default": "https://www.gongzicp.com",
+      "mode": "input",
+      "format": "single"
+    },
+    "thread_num": "1",
+    "delay": "3000"
+  }
+}

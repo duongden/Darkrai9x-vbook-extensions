@@ -1,0 +1,23 @@
+{
+  "metadata": {
+    "name": "HHKungFu",
+    "author": "vBook",
+    "version": 3,
+    "source": "https://hhkungfu.ee/",
+    "regexp": "(www\\.)?hhkungfu\\.ee/.*",
+    "description": "Xem phim hoạt hình Trung Quốc trên HHKungFu",
+    "locale": "vi_VN",
+    "type": "video",
+    "language": "javascript",
+    "encrypt": true
+  },
+  "script": {
+    "home": "home.js",
+    "genre": "genre.js",
+    "detail": "detail.js",
+    "search": "search.js",
+    "toc": "toc.js",
+    "chap": "chap.js",
+    "track": "track.js"
+  }
+}

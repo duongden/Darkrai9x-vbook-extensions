@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "name": "MTC",
+    "author": "vBook",
+    "version": 50,
+    "source": "https://metruyencv.com",
+    "regexp": "(www.)?(metruyenchu|mtccv|metruyencv).[a-z]+/truyen/[a-zA-Z0-9-]+/?$",
+    "description": "Đọc truyện trên trang Mê Truyện CV",
+    "locale": "vi_VN",
+    "language": "javascript",
+    "type": "novel",
+    "encrypt": true
+  },
+  "script": {
+    "detail": "detail.js",
+    "toc": "toc.js",
+    "chap": "chap.js",
+    "home": "home.js",
+    "genre": "genre.js",
+    "search": "search.js"
+  }
+}

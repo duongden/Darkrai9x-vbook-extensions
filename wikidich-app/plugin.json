@@ -1,0 +1,25 @@
+{
+  "metadata": {
+    "name": "[APP] Wikidich",
+    "author": "vBook",
+    "version": 4,
+    "source": "https://api.truyenreview.com",
+    "regexp": "(www.)?api.truyenreview.com/book/[^/]+/?$",
+    "description": "Đọc truyện trên App Wiki Dịch",
+    "language": "javascript",
+    "type": "novel",
+    "encrypt": true,
+    "locale": "vi_VN"
+  },
+  "script": {
+    "home": "home.js",
+    "detail": "detail.js",
+    "search": "search.js",
+    "toc": "toc.js",
+    "chap": "chap.js"
+  },
+  "config": {
+    "thread_num": 1,
+    "delay": 3000
+  }
+}
