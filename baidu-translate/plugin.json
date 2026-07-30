@@ -2,7 +2,7 @@
   "metadata": {
     "name": "Baidu Translate",
     "author": "vBook",
-    "version": 1,
+    "version": 2,
     "source": "https://fanyi.baidu.com",
     "description": "Dịch truyện bằng Baidu Translate",
     "type": "translate"
