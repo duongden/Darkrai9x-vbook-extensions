@@ -86,10 +86,11 @@ Read only the file for the mode you're in.
 
 - **CREATE** — new extension from a story/video/comic-site URL. Read `modes/create.md`.
 - **FIX** — update an existing extension (domain change, broken selector, old→new contract migration). Read `modes/fix.md`.
-- **TEST** — check an existing extension, read-only, no edits. Test all (every script, full report) or test one (single named script). Read `modes/test.md`.
+- **TEST** — check one existing extension, read-only, no edits. Test all its scripts (full chain report) or test one (single named script). Read `modes/test.md`.
+- **AUDIT** — repo-wide: test **every** extension (or a named subset) with one probe each, classify status (work/moved/dead/auth), report. Breadth not depth. Read `modes/audit.md`.
 - **REFACTOR** — align an existing, working extension to the current template style (config.js/BASE_URL/normalizeUrl, encrypt, field contract, comment stripping) **without changing behavior**. Read `modes/refactor.md`.
 
-If unclear, ask. Bare URL with no verb → assume CREATE.
+If unclear, ask. Bare URL with no verb → assume CREATE. "Test all extensions" / "which are dead" / "audit repo" → AUDIT (many exts); "test this extension" / "what's broken in X" → TEST (one ext).
 
 ## Test / build / install — always via `scripts/vbook.js` (REST API, no MCP)
 
@@ -100,7 +101,10 @@ node .claude/skills/vbook-extensions/scripts/vbook.js connect
 node .claude/skills/vbook-extensions/scripts/vbook.js install <ext-dir> [--no-icon]
 node .claude/skills/vbook-extensions/scripts/vbook.js test    <ext-dir> <script.js> [arg1 arg2 ...]
 node .claude/skills/vbook-extensions/scripts/vbook.js build   <ext-dir> [out.zip]
+node .claude/skills/vbook-extensions/scripts/vbook.js testall [ext...] [--query <kw>] [--timeout <ms>] [--json <file>]
 ```
+
+`testall` is the repo-wide audit (AUDIT mode, `modes/audit.md`): with no ext args it probes every on-disk ext (each dir with `plugin.json`+`src/`), else just the named ones. Per ext it runs `search.js` with `--query` (default `tien`; falls back to `home.js`/first script if no `search`), unwraps the nested `Response` payload, and prints one status line + a grouped summary: **WORK** / **MOVED** (host≠source) / **AUTH/MSG** (`code:1`) / **EMPTY** (`code:0`, 0 items) / **CRASH** (JS error) / **UNREACHABLE** (timeout, auto-retried once). `--json` also writes machine-readable rows. Statuses are one-keyword triage, not proof — never delete on EMPTY/CRASH/UNREACHABLE without a direct dead-site confirmation (see AUDIT mode).
 
 `<ext-dir>` is repo-relative (e.g. `hhtqvietsub`). Args after the script name map to `vararg` (detail/toc/chap → `[url]`, search → `[query, page]`, track → `[episodeUrl]`, tts → `[text, voiceId]`, translate → `[text, from, to, source]`). Icon auto-included from `<ext-dir>/icon.png`; pass `--no-icon` for faster installs.
 
