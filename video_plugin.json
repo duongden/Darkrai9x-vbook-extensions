@@ -25,6 +25,17 @@
       "description": "Xem hoạt hình Trung Quốc (donghua) trên YanHH3D",
       "locale": "vi_VN",
       "type": "video"
+    },
+    {
+      "name": "Motchill",
+      "author": "vBook",
+      "path": "https://raw.githubusercontent.com/Darkrai9x/vbook-extensions/refs/heads/master/motchill/plugin.zip",
+      "version": 1,
+      "source": "https://motchille.tv",
+      "icon": "https://raw.githubusercontent.com/Darkrai9x/vbook-extensions/refs/heads/master/motchill/icon.png",
+      "description": "Xem phim Vietsub, thuyết minh trên Motchill",
+      "locale": "vi_VN",
+      "type": "video"
     }
   ]
 }

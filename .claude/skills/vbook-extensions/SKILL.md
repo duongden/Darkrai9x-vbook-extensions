@@ -54,6 +54,23 @@ Engine: Rhino `1.8.1`, `languageVersion = Context.VERSION_ES6`, `initSafeStandar
 - `.attr()` on an `Elements` collection reads the first element; `.text()` on the same collection concatenates every matched element's text. Add `.first()` explicitly for one element.
 - `.attr("href")` returns the raw value, not absolute — prepend `DOMAIN` yourself, or use `.absUrl("href")`.
 
+## Hard rule: jsoup first, regex only when the DOM can't reach it
+
+**Always try a jsoup selector before reaching for a regex over the raw response text.** Selectors survive whitespace, attribute reordering, and markup churn; regexes over HTML break on all three. Write `doc.select(...)` and only fall back to `response.text()` + regex when the data genuinely isn't in the parsed DOM.
+
+Legitimate regex cases — the value is not a DOM node at all:
+
+- **Data embedded in a script/JSON blob**: Next.js RSC payloads (`self.__next_f.push`), `__NEXT_DATA__`, `window.__INITIAL_STATE__`, inline config objects. Client-rendered lists often exist *only* here (a `BAILOUT_TO_CLIENT_SIDE_RENDERING` marker is the giveaway) — the visible anchors on such a page usually belong to the sidebar, not the list you want.
+- **Values inside an attribute or text node** (an id in a `style="url(...)"`, a stream link inside an inline `<script>`), after selecting that node with jsoup.
+- **A stream URL scraped from a player page** that never becomes markup.
+
+Rules when you do use regex:
+
+- Select the smallest node you can with jsoup first, then regex *its* `html()`/`text()` — don't regex the whole document.
+- Escaped payloads need unescaping once (`text.replace(/\\"/g, '"')`) before matching; do it in one shared helper in `config.js`, not per script.
+- **Mixing is normal and correct**: e.g. take a list's items from the JSON payload but its labels from the rendered nav, when only the nav carries them.
+- Note *why* the regex is there in a one-line comment, so the next edit doesn't "fix" it back into a selector that can't work.
+
 ## Hard rule: always check `response.ok`
 
 `fetch()`/`Http.get()` never throws on HTTP error status. Never call `.html()`/`.json()`/`.text()`/`.base64()` before checking `.ok`:
