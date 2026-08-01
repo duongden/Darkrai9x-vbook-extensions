@@ -14,6 +14,17 @@
       "description": "Xem phim hoạt hình Trung Quốc trên HHTQ Vietsub",
       "locale": "vi_VN",
       "type": "video"
+    },
+    {
+      "name": "YanHH3D",
+      "author": "vBook",
+      "path": "https://raw.githubusercontent.com/Darkrai9x/vbook-extensions/refs/heads/master/yanhh3d/plugin.zip",
+      "version": 1,
+      "source": "https://yanhh3d.ee",
+      "icon": "https://raw.githubusercontent.com/Darkrai9x/vbook-extensions/refs/heads/master/yanhh3d/icon.png",
+      "description": "Xem hoạt hình Trung Quốc (donghua) trên YanHH3D",
+      "locale": "vi_VN",
+      "type": "video"
     }
   ]
 }

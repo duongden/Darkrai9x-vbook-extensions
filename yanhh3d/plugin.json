@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "name": "YanHH3D",
+    "author": "vBook",
+    "version": 1,
+    "source": "https://yanhh3d.ee",
+    "description": "Xem hoạt hình Trung Quốc (donghua) trên YanHH3D",
+    "locale": "vi_VN",
+    "regexp": "(www.)?yanhh3d\\.[a-z]+/[^/]+/[^/]+/?$",
+    "type": "video",
+    "format": "series",
+    "nsfw": false,
+    "encrypt": true
+  },
+  "script": {
+    "home": "home.js",
+    "explore": "explore.js",
+    "genre": "genre.js",
+    "search": "search.js",
+    "detail": "detail.js",
+    "toc": "toc.js",
+    "chap": "chap.js",
+    "track": "track.js"
+  },
+  "config": {
+    "DOMAIN": {
+      "title": "Tên miền",
+      "default": "https://yanhh3d.ee",
+      "mode": "input",
+      "format": "text"
+    }
+  }
+}
