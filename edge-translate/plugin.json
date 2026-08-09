@@ -2,10 +2,11 @@
   "metadata": {
     "name": "Edge Translate",
     "author": "vBook",
-    "version": 1,
-    "source": "https://www.bing.com/translator",
-    "description": "Dịch truyện bằng Edge TTS",
-    "type": "translate"
+    "version": 2,
+    "source": "https://edge.microsoft.com/translate",
+    "description": "Dịch truyện bằng Edge Translate",
+    "type": "translate",
+    "encrypt": true
   },
   "script": {
     "language": "language.js",

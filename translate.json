@@ -7,7 +7,7 @@
     {
       "name": "Edge Translate",
       "author": "vBook",
-      "version": 1,
+      "version": 2,
       "source": "https://www.bing.com/translator",
       "path": "https://raw.githubusercontent.com/Darkrai9x/vbook-extensions/master/edge-translate/plugin.zip",
       "icon": "https://raw.githubusercontent.com/Darkrai9x/vbook-extensions/master/edge-translate/icon.png",
