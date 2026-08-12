@@ -34,7 +34,7 @@ return Response.error("message");       // -> { "code": 1, "data": "message" }
 | `novel` | Text-based books (novel, light novel, web novel) |
 | `comic` | Image-based comics (manga, manhwa, manhua) |
 | `video` | Video content (series, anime). Playable formats: `series`, `stream` |
-| `audio` | Audio content — parsed but **not yet playable** (no audio player) |
+| `audio` | Audio content (music, album, audiobook). Playable formats: `audio` (single track), `album` (playlist) |
 | `tts` | Text-to-speech engine |
 | `translate` | Translation engine |
 
@@ -63,7 +63,7 @@ return Response.error("message");       // -> { "code": 1, "data": "message" }
 | `search` (+ scripts it references) | ✓ | ✓ | ✓ | ✓ | — | — |
 | `detail` | ✓ | ✓ | ✓ | ✓ | — | — |
 | `toc` | ✓ | ✓ | ✓ | ✓ | — | — |
-| `chap` | ✓ | ○¹ | ○² | ○² | — | — |
+| `chap` | ✓ | ○¹ | ✓² | ○³ | — | — |
 | `page` | — | ○¹ | — | — | — | — |
 | `track` | — | — | ✓ | ✓ | — | — |
 | `home` | ○ | ○ | ○ | ○ | — | — |
@@ -76,7 +76,9 @@ return Response.error("message");       // -> { "code": 1, "data": "message" }
 
 ¹ **comic** needs *either* `page` (dedicated image list) *or* `chap` returning an array. Declare at least one; if both are omitted the raw chapter URL is used as a single page.
 
-² **video/audio** `track` is required; `chap` is optional and declares the `chap`→`track` chain (`chap` lists an episode's servers, `track` resolves the chosen one). Omit `chap` and the episode url is passed straight to `track` — fine for a single-source site, but you lose per-episode server selection.
+² **audio** needs **both** `chap` and `track`. Unlike video, the audio path calls `chap` unconditionally — omitting it makes track resolution throw and the track silently fails to play (no fallback to the raw TOC path). Return `[{ title, data }]` from `chap` even for a single source.
+
+³ **video** `track` is required; `chap` is optional and declares the `chap`→`track` chain (`chap` lists an episode's servers, `track` resolves the chosen one). Omit `chap` and the episode url is passed straight to `track` — fine for a single-source site, but you lose per-episode server selection.
 
 - **Content types** (`novel`/`comic`/`audio`/`video`): required core is `search` + `detail` + `toc` + the per-chapter content script (`chap`/`page`/`track`). Optional discovery scripts (`home`/`explore`/`genre`) just get hidden from the UI if omitted — `search` itself is still required (it powers both search and listing).
 - **`tts`** (engine, not a content source): required `voice` (voice + language list) + `tts` (synthesize a sentence → base64 audio). Does not use the fetch scripts.
@@ -89,7 +91,7 @@ return Response.error("message");       // -> { "code": 1, "data": "message" }
 | `novel` | `toc` | `chap` → HTML string (+ title in `data2`) | Rendered as styled HTML |
 | `comic` | `toc` | `page` → image URL array; falls back to `chap` if `page` isn't declared | If both absent, the chapter URL is used as the single page |
 | `video` | `toc` | `chap` → server list, then `track` → playback object | Each TOC entry is an episode. Formats: `series`, `stream` |
-| `audio` | `toc` | `chap` → server list, then `track` | Parsed but **not yet playable** — no audio player wired |
+| `audio` | `toc` → the playlist | `chap` → source list, then `track` → audio URL | Each TOC entry is one track. Formats: `audio` (1 track), `album` (playlist). No source picker — first `chap` entry wins |
 | `tts` | `voice` → voices/languages | `tts` → base64 audio | Engine, not a content source |
 | `translate` | `language` → from/to list | `translate` → text/segments | Engine, not a content source |
 
@@ -97,7 +99,51 @@ return Response.error("message");       // -> { "code": 1, "data": "message" }
 1. The app calls **`chap(episodeUrl)`** first — return the list of playable **servers/sources** for that episode as `[{ title, data }, ...]` (e.g. one entry per "VIP"/"FBK" server button). `title` is shown to the user as a selectable source; `data` is an opaque handle (an embed URL, a stream URL, or any string) passed straight to `track`. A single-server episode still returns a one-element list.
 2. When the user picks a source (or the first is auto-selected), the app calls **`track(data)`** with that entry's `data` — resolve it to the final playback object (`{ type, data, headers, ... }`, see track.js below). Prefer resolving to a direct `native` stream; when the real link can't be extracted, fall back to `auto` (let the app sniff it) — use `webview` only if `auto` also fails. Order: `native` → `auto` → `webview`.
 
-Declaring only `track` (no `chap`) also works for a single-source site — the episode url is passed straight to `track` — but `chap` is what lets a site expose multiple servers per episode.
+Declaring only `track` (no `chap`) also works for a single-source **video** site — the episode url is passed straight to `track` — but `chap` is what lets a site expose multiple servers per episode.
+
+**Audio uses the same `toc`→`chap`→`track` script names, but five behaviours differ. Read these before writing an `audio` extension:**
+
+1. **`chap` is mandatory** (see footnote ² above). No `chap`, no playback.
+2. **No source picker.** The app takes the **first** `chap` entry and resolves it — extra entries are parsed but never offered to the user. Put the best source first; `title` is effectively unused.
+3. **`chap` must return an array or an object, not a bare URL string.** The payload is parsed as JSON and the pointer is read from `data` → `url` → `link` (first non-blank wins). Accepted shapes: `[{data}]`, `["url"]`, `{tracks:[…]}`, `{data:[…]}`, `{data:"…"}`. A bare string fails to parse and the unresolved TOC path is passed to `track` instead.
+4. **`track` resolves to `audios[0].data` when `audios[]` is non-empty, otherwise to `data`** — with headers picked the same way (`audios[0].headers`, else top-level `headers`). A plain `{ type: "native", data, headers }` is the normal answer; use `audios[]` only when the site exposes several qualities, best entry first.
+5. **`type` must be `native`/`auto`/`webview`** (any other value throws), but audio needs a real media URL — `auto`/`webview` have no meaningful audio path. Resolve to `native` or return `Response.error`.
+
+**Lyrics — `lyrics`, never `subtitles`.** The audio path reads a dedicated `lyrics` field off the same `track` object and ignores `subtitles` entirely (that one is video-only). Return either the array form or the single-value shorthand:
+
+```js
+return Response.success({
+    type: "native",
+    data: "https://example.com/song.mp3",
+    headers: { "Referer": "https://example.com" },
+    // Array form — first entry is the one shown.
+    lyrics: [
+        { data: "https://example.com/song.lrc", type: "lrc", label: "Lời bài hát", language: "vi" }
+    ]
+    // Shorthand for one source: lyric: "https://example.com/song.lrc"
+    // A bare string entry also works: lyrics: ["https://example.com/song.lrc"]
+});
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `data` | string | **Required.** A URL, a `data:...;base64,...` URI, **or the raw lyric text itself** — embed the text directly when the site renders lyrics into the page and there's no file to link |
+| `type` | string | Format hint `lrc`/`vtt`/`srt`/`txt`. Optional — the app sniffs the content and ignores a wrong hint |
+| `label` | string | Display name. Optional |
+| `language` | string | BCP-47 tag. Optional |
+
+Accepted lyric formats, detected from content:
+- **LRC** — `[mm:ss.xx]line`. Multi-timestamp lines (`[00:12.00][01:20.00]chorus`), `[offset:±ms]`, and enhanced word-level `<mm:ss.xx>` markers are all handled; metadata tags (`[ar:]`, `[ti:]`) are dropped.
+- **VTT/SRT** — cue blocks; each cue becomes one line, end times discarded.
+- **Plain text** — no timing. Rendered as a scrollable block with no highlight, so prefer LRC when the site has it.
+
+Lyrics are fetched with the **track's own headers**, so a referer-protected `.lrc` on the media host works without extra config. Only the **first** `lyrics` entry is used — no language picker yet.
+
+Fields the audio path **ignores** (don't spend effort on them): `subtitles`/`subtitle`, `timeSkip`, `mimeType`-driven quality selection, per-track duration and per-track cover art — the model has `durationMs`/`cover` but nothing populates them from script output. There is **no DRM support** (no `licenseUrl`/Widevine/ClearKey field is read).
+
+**Header caveat (Android):** every resolved track's headers are flattened into one map applied to the whole playlist, so per-track differing headers collide — last writer wins. Keep headers identical across an album's tracks.
+
+`detail.js`'s `format` picks the player's list UI: `"album"` = playlist (many tracks), `"audio"` = single track. Both use the same player; getting it wrong just shows a multi-track album as one song.
 
 `chap`'s return shape is runtime-dispatched, not type-dispatched — a `comic` source may implement either `page` or return an array straight from `chap`, both work:
 
@@ -114,7 +160,7 @@ Declaring only `track` (no `chap`) also works for a single-source site — the e
 ```
 extension.zip
   plugin.json       <- manifest
-  icon.png          <- extension icon (200x200, optional)
+  icon.png          <- extension icon (200x200; engine-optional, but this skill requires one on every extension)
   src/
     search.js       <- script files
     detail.js
@@ -270,10 +316,25 @@ function execute() {
 | `title` | string | no | Section header text |
 | `subtitle` | string | no | Section subtitle text |
 | `id` | string | no | Unique ID (auto-generated from `type` + index if empty) |
+| `shape` | string | no | Card shape for the section's items — see below. Empty/unknown = `book` |
 | `items` | array | no | List of explore items |
 | `action` | object | no | "See more" action on the section header |
 
 **Section `type` values:** `banner` (full-width carousel), `horizontal_list`, `grid`, `list`, `ranking` (numbered), `chip` (tag buttons row).
+
+**Section `shape` values** (card aspect for the items rendered in the section — applies to `grid`, `horizontal_list`, `ranking`, `list`; ignored by `banner`/`chip`):
+
+| Value | Card |
+|-------|------|
+| `book` | Book cover, 2:3 (default) |
+| `square` | 1:1 square |
+| `circle` | 1:1 circle, title centered, description hidden |
+| `movie` | 16:9 landscape |
+
+```js
+{ id: "album", title: "Album", type: "grid", shape: "square", items: [] }
+{ id: "genres", title: "Thể loại", type: "horizontal_list", shape: "circle", items: [] }
+```
 
 **Action fields** (section `action` and item `action` share this shape):
 
@@ -415,8 +476,12 @@ Each `tags`/`genres`/`suggests`/`reviews`/`comments` entry is `{ title, input, s
 | comic | `comic` | Web comic (image list per chapter) |
 | comic | `cbz` | CBZ archive |
 | comic | `pdf` | PDF file |
+| audio | `audio` | Single track (music/song). Default for `type: "audio"` |
+| audio | `album` | Multi-track album/playlist |
 | video | `series` | TV series (episodes as chapters) |
 | video | `stream` | Live stream |
+| video | `clip` | Single clip |
+| video | `short` | Short-form vertical video |
 
 ### toc.js — chapter/episode list
 
@@ -491,7 +556,7 @@ Same signature and return shape as the comic `chap.js` variant above — declare
 
 ### track.js — video/audio playback (step 2 of the `chap`→`track` chain)
 
-Called for `video`/`audio` sources. Receives the `data` handle from a `chap` server entry and resolves it to a playback object. (If a site declares `track` but not `chap`, the episode url is passed straight in.)
+Called for `video`/`audio` sources. Receives the `data` handle from a `chap` server entry and resolves it to a playback object. (For **video** only: if a site declares `track` but not `chap`, the episode url is passed straight in. **Audio always goes through `chap`** — see the audio chain notes above for the five behaviours that differ.)
 
 | Param | Description |
 |-------|-------------|
@@ -538,6 +603,7 @@ function execute(data) {
 | `timeSkip` | array | Skip ranges `{ fromTime, toTime }` in ms (intro/outro) |
 | `subtitles` | array | `{ data, type, label, language }` — `data` required |
 | `audios` | array | Alternate audio tracks `{ data, type, label, language, headers }` — `data` required |
+| `lyrics` | array | **`audio` only.** Lyric sources `{ data, type, label, language }` — `data` required, and may be a URL, a data URI, or raw lyric text. Shorthand: `lyric` (string) + optional `lyricType`. See the audio chain notes above |
 
 Legacy single-value fields still accepted: `audio` (string), `subtitle` + `subtitleType` (strings). Prefer the `audios`/`subtitles` arrays.
 

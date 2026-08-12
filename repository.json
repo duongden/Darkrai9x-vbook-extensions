@@ -10,6 +10,11 @@
     "description": "Extension trang chinese"
   },
   {
+    "link": "https://raw.githubusercontent.com/Darkrai9x/vbook-extensions/master/audio.json",
+    "author": "vBook",
+    "description": "Extension nghe nhạc"
+  },
+  {
     "link": "https://raw.githubusercontent.com/lethituyen/vbooks-extension/refs/heads/master/plugin.json",
     "author": "Nhocconsr",
     "description": "Thích là nhích ^^"
