@@ -2,11 +2,11 @@
   "metadata": {
     "name": "Octave",
     "author": "vBook",
-    "version": 1,
+    "version": 2,
     "source": "https://music.octavestreaming.com",
-    "description": "Octave — free music streaming (albums, playlists, artists). 320kbps.",
+    "description": "Octave — free music streaming (albums, playlists, artists, radio, podcasts). 320kbps.",
     "locale": "global",
-    "regexp": "octavestreaming\\.com/(album|playlist|artist|track)/",
+    "regexp": "octavestreaming\\.com/(album|playlist|artist|track|radio|podcast)/",
     "type": "audio",
     "nsfw": false
   },

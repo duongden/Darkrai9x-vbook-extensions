@@ -8,10 +8,10 @@
       "name": "Octave",
       "author": "vBook",
       "path": "https://raw.githubusercontent.com/Darkrai9x/vbook-extensions/refs/heads/master/octave/plugin.zip",
-      "version": 1,
+      "version": 2,
       "source": "https://music.octavestreaming.com",
       "icon": "https://raw.githubusercontent.com/Darkrai9x/vbook-extensions/refs/heads/master/octave/icon.png",
-      "description": "Nghe nhạc miễn phí trên Octave (album, playlist, nghệ sĩ, bảng xếp hạng)",
+      "description": "Nghe nhạc miễn phí trên Octave (album, playlist, nghệ sĩ, radio, podcast)",
       "locale": "global",
       "type": "audio"
     }
