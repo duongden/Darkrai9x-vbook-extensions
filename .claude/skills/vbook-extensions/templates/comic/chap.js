@@ -1,8 +1,6 @@
-// chap.js — alternative to page.js: return the comic page image list straight
-// from chap.js instead of a dedicated page.js. Use ONE of the two, not both —
-// pick this file and drop page.js (remove "page" from plugin.json.script) if
-// the site has no separate page-list endpoint; otherwise keep page.js and
-// delete this file.
+// chap.js — comic chapter content: return the chapter's image URL array. This
+// is where a comic's images live (the app reads chapter content from chap).
+// page.js is unrelated — it's optional TOC pagination, not the image list.
 load('config.js');
 function execute(url) {
     url = normalizeUrl(url);

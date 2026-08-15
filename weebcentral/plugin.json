@@ -1,0 +1,31 @@
+{
+  "metadata": {
+    "name": "Weeb Central",
+    "author": "vBook",
+    "version": 2,
+    "source": "https://weebcentral.com",
+    "description": "Read manga, manhwa and manhua on Weeb Central",
+    "locale": "en",
+    "regexp": "weebcentral\\.com/series/[A-Za-z0-9]+",
+    "type": "comic",
+    "nsfw": false,
+    "encrypt": true
+  },
+  "script": {
+    "home": "home.js",
+    "explore": "explore.js",
+    "genre": "genre.js",
+    "search": "search.js",
+    "detail": "detail.js",
+    "toc": "toc.js",
+    "chap": "chap.js"
+  },
+  "config": {
+    "DOMAIN": {
+      "title": "Domain",
+      "default": "https://weebcentral.com",
+      "mode": "input",
+      "format": "text"
+    }
+  }
+}

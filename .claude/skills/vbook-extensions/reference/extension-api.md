@@ -50,7 +50,7 @@ return Response.error("message");       // -> { "code": 1, "data": "message" }
 | `toc` | Chapter list | `execute(url)` |
 | `chap` | Chapter content | `execute(url)` |
 | `track` | Video/audio track | `execute(data)` |
-| `page` | Comic page list | `execute(url)` |
+| `page` | Comic TOC-pagination list | `execute(url)` |
 | `voice` | TTS voice + language list | `execute()` |
 | `tts` | TTS synthesis | `execute(text, voiceId)` |
 | `language` | Translate language list | `execute()` |
@@ -63,8 +63,8 @@ return Response.error("message");       // -> { "code": 1, "data": "message" }
 | `search` (+ scripts it references) | ✓ | ✓ | ✓ | ✓ | — | — |
 | `detail` | ✓ | ✓ | ✓ | ✓ | — | — |
 | `toc` | ✓ | ✓ | ✓ | ✓ | — | — |
-| `chap` | ✓ | ○¹ | ✓² | ○³ | — | — |
-| `page` | — | ○¹ | — | — | — | — |
+| `chap` | ✓ | ✓¹ | ✓² | ○³ | — | — |
+| `page` | ○⁴ | ○⁴ | ○⁴ | ○⁴ | — | — |
 | `track` | — | — | ✓ | ✓ | — | — |
 | `home` | ○ | ○ | ○ | ○ | — | — |
 | `explore` | ○ | ○ | ○ | ○ | — | — |
@@ -74,13 +74,15 @@ return Response.error("message");       // -> { "code": 1, "data": "message" }
 | `language` | — | — | — | — | — | ✓ |
 | `translate` | — | — | — | — | — | ✓ |
 
-¹ **comic** needs *either* `page` (dedicated image list) *or* `chap` returning an array. Declare at least one; if both are omitted the raw chapter URL is used as a single page.
+¹ **comic** — the chapter's images come from **`chap`** (return the image URL array). Do not put images in `page`; the app reads chapter content from `chap` and renders a blank chapter otherwise.
 
 ² **audio** needs **both** `chap` and `track`. Unlike video, the audio path calls `chap` unconditionally — omitting it makes track resolution throw and the track silently fails to play (no fallback to the raw TOC path). Return `[{ title, data }]` from `chap` even for a single source.
 
 ³ **video** `track` is required; `chap` is optional and declares the `chap`→`track` chain (`chap` lists an episode's servers, `track` resolves the chosen one). Omit `chap` and the episode url is passed straight to `track` — fine for a single-source site, but you lose per-episode server selection.
 
-- **Content types** (`novel`/`comic`/`audio`/`video`): required core is `search` + `detail` + `toc` + the per-chapter content script (`chap`/`page`/`track`). Optional discovery scripts (`home`/`explore`/`genre`) just get hidden from the UI if omitted — `search` itself is still required (it powers both search and listing).
+⁴ **`page` — TOC pagination, any content type.** It is **not** per-chapter content. `toc(url)` returns the chapters/episodes on **one** table-of-contents page; when a title's full list spans several TOC pages, `page` enumerates those pages (each handle is fed back to `toc`). Novels, comics, audio and video all use it the same way. A title whose whole list fits one `toc` call needs no `page` — omit it and drop the key.
+
+- **Content types** (`novel`/`comic`/`audio`/`video`): required core is `search` + `detail` + `toc` + the per-chapter content script (`chap`, or `track` for video/audio). `page` (TOC pagination) and the discovery scripts (`home`/`explore`/`genre`) are optional — they just get hidden from the UI if omitted. `search` itself is still required (it powers both search and listing).
 - **`tts`** (engine, not a content source): required `voice` (voice + language list) + `tts` (synthesize a sentence → base64 audio). Does not use the fetch scripts.
 - **`translate`** (engine): required `language` (from/to list) + `translate` (translate text → string or `{ segments }`). Also skips the fetch scripts.
 
@@ -89,7 +91,7 @@ return Response.error("message");       // -> { "code": 1, "data": "message" }
 | `type` | Chapter list | Per-chapter content | Notes |
 |--------|-------------|---------------------|-------|
 | `novel` | `toc` | `chap` → HTML string (+ title in `data2`) | Rendered as styled HTML |
-| `comic` | `toc` | `page` → image URL array; falls back to `chap` if `page` isn't declared | If both absent, the chapter URL is used as the single page |
+| `comic` | `toc` (+ `page` if the chapter list is paginated) | `chap` → image URL array | `chap` holds the chapter's images. `page` is **not** the image list — see the `page` vs `toc` note below |
 | `video` | `toc` | `chap` → server list, then `track` → playback object | Each TOC entry is an episode. Formats: `series`, `stream` |
 | `audio` | `toc` → the playlist | `chap` → source list, then `track` → audio URL | Each TOC entry is one track. Formats: `audio` (1 track), `album` (playlist). No source picker — first `chap` entry wins |
 | `tts` | `voice` → voices/languages | `tts` → base64 audio | Engine, not a content source |
@@ -145,13 +147,15 @@ Fields the audio path **ignores** (don't spend effort on them): `subtitles`/`sub
 
 `detail.js`'s `format` picks the player's list UI: `"album"` = playlist (many tracks), `"audio"` = single track. Both use the same player; getting it wrong just shows a multi-track album as one song.
 
-`chap`'s return shape is runtime-dispatched, not type-dispatched — a `comic` source may implement either `page` or return an array straight from `chap`, both work:
+`chap`'s return shape is runtime-dispatched, not type-dispatched — the same `chap.js` serves every content type by what it returns:
 
 | Runtime shape | Treated as |
 |---|---|
 | **string** | HTML novel content (`data2` = title) |
-| **array** | Comic page list (image URLs) |
+| **array** | Comic chapter images (image URLs) |
 | **object** | Passed through as-is (structured audio/video payloads) |
+
+(`page` is unrelated to this — it's TOC pagination, not chapter content; see the comic footnote above.)
 
 ---
 
@@ -302,7 +306,7 @@ function execute() {
             subtitle: "Recently updated books",
             type: "grid",
             items: latestItems,
-            action: { type: "list", script: "latest.js", input: "", data: "" }
+            more: { type: "list", name: "Latest Updates", script: "latest.js", input: "" }
         }
     ]);
 }
@@ -318,7 +322,7 @@ function execute() {
 | `id` | string | no | Unique ID (auto-generated from `type` + index if empty) |
 | `shape` | string | no | Card shape for the section's items — see below. Empty/unknown = `book` |
 | `items` | array | no | List of explore items |
-| `action` | object | no | "See more" action on the section header |
+| `more` | object | no | "See more" action on the section header (an Action object — see below). **Note the name is `more`, not `action`** — a section-level `action` is ignored, so the "See more" link won't render |
 
 **Section `type` values:** `banner` (full-width carousel), `horizontal_list`, `grid`, `list`, `ranking` (numbered), `chip` (tag buttons row).
 
@@ -336,14 +340,15 @@ function execute() {
 { id: "genres", title: "Thể loại", type: "horizontal_list", shape: "circle", items: [] }
 ```
 
-**Action fields** (section `action` and item `action` share this shape):
+**Action fields** (the section's `more` and an item's `action` share this shape):
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `type` | string | `list` (open paginated list, "See all") or `detail` (open item detail page, `input` = item URL) |
+| `name` | string | List-screen title (used by the `list` action's book-list screen) |
 | `script` | string | JS filename to execute |
 | `input` | string | Passed as `args[0]` |
-| `data` | string | Passed as `args[1]` |
+| `data` | string | Passed as `args[1]` (item `action` only) |
 
 **Explore item fields:** `name`, `cover`, `link` (auto-creates a `detail` action if no explicit `action`), `description`, `tag`, `host` (base-URL override for relative links), `action` (overrides the default link→detail behavior).
 
@@ -517,7 +522,7 @@ function execute(url) {
 
 | Param | Description |
 |-------|-------------|
-| `url` | The chapter/episode URL a TOC entry pointed to. Same `url` is passed to `page` when that script is declared |
+| `url` | The chapter/episode URL a TOC entry pointed to |
 
 Return shape depends on type (runtime-dispatched — see the Quick reference table):
 
@@ -550,9 +555,9 @@ function execute(url) {
 }
 ```
 
-### page.js — comic page list (alternative to array-returning `chap.js`)
+### page.js — table-of-contents pagination (optional, any content type)
 
-Same signature and return shape as the comic `chap.js` variant above — declare whichever one fits; see the Quick reference table for the fallback rule.
+`execute(url)` — used **only** when a title's chapter/episode list spans multiple TOC pages. Return the list of TOC-page handles; the app calls `toc` on each to get that page's entries. It is **not** per-chapter content — a chapter's body/images/stream comes from `chap`/`track`. Applies to novel/comic/audio/video alike. Omit `page` entirely when the whole list fits one `toc` call.
 
 ### track.js — video/audio playback (step 2 of the `chap`→`track` chain)
 

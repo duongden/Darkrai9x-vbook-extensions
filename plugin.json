@@ -313,6 +313,17 @@
       "description": "Đọc Mato Seihei no Slave trên MatoDex",
       "type": "comic",
       "locale": "vi_VN"
+    },
+    {
+      "name": "Weeb Central",
+      "author": "vBook",
+      "path": "https://raw.githubusercontent.com/Darkrai9x/vbook-extensions/master/weebcentral/plugin.zip",
+      "version": 2,
+      "source": "https://weebcentral.com",
+      "icon": "https://raw.githubusercontent.com/Darkrai9x/vbook-extensions/master/weebcentral/icon.png",
+      "description": "Read manga, manhwa and manhua on Weeb Central",
+      "type": "comic",
+      "locale": "en"
     }
   ]
 }
